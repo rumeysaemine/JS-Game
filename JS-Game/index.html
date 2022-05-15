@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Ball</title>
+    
+    <style>
+        canvas {
+            border:0px solid #f5e3e6;
+            
+            background-color: #6b6b8a;
+            background-image: linear-gradient(to bottom, #2f4e68, #4e5d7a, #6b6b8a, #897b98, #a58ba5, #b695ac, #c79fb2, #d7a9b7, #e2aeb7, #ecb3b6, #f5b8b5, #fdbeb3);
+
+            box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);
+            border-radius:25px;
+            position:absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: auto;   
+        }
+
+        body {
+            background-color: #d9e4f5;
+            background-image: radial-gradient(circle, #f3e6e8, #efe0e6, #e9dae5, #e0d4e5, #d5d0e5);
+        }
+
+        .center {
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;   
+        }
+
+        .button{
+            background-color: #d9e4f5;
+            background-image: linear-gradient(315deg, #d9e4f5 0%, #f5e3e6 74%);
+
+            border: 0px;
+            box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);
+
+            font-size: 30px;
+            font-family:'Times New Roman', Times, serif;
+            color:#2f4e68;
+            padding-top: 15px;
+            padding-bottom: 15px;
+            border-radius: 25px;
+            width: 250px;
+        }
+    </style> 
+</head>
+<body>
+
+    <div id="modalEl" class="center">
+        <div>
+            <button id="startGameBtn" class="button">Start Game</button>
+        </div>
+    </div>
+
+    <script>
+        
+        let mainComponent;
+        let obstacles = [];
+        let rewards = [];
+        var star = 0;
+
+        function init(){
+            mainComponent;
+            obstacles = [];
+            rewards = [];
+            star = 0;
+        }
+        
+        const startGameBtn = document.querySelector('#startGameBtn');
+        const modalEl = document.querySelector('#modalEl');
+
+        function startGame() {
+            mainComponent = new component("#b80e65", 225, 350, 20);
+            myStar = new component("#F3E6E8", 330, 20,"20px","Times New Roman","text");
+
+            sound1 = new Audio();
+            sound1.src = "soundEffects/soundEffect.mp3";
+            sound2 = new Audio();
+            sound2.src = "soundEffects/soundEffect2.mp3"
+            
+            myGameArea.start();
+        }
+        
+        startGameBtn.addEventListener('click',function(e){
+            startGame();
+            document.getElementById("modalEl").style.display = "none";
+        })
+
+        var myGameArea = {
+            canvas : document.createElement("canvas"),
+            start : function() {
+                this.canvas.width = 450;
+                this.canvas.height = 700;
+                this.context = this.canvas.getContext("2d");
+                document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+                this.frameNo = 0;
+                this.interval = setInterval(updateGameArea, 8);
+
+                window.addEventListener('keydown', function (e) {
+                myGameArea.keys = (myGameArea.keys || []);
+                myGameArea.keys[e.keyCode] = true;
+                })
+                window.addEventListener('keyup', function (e) {
+                myGameArea.keys[e.keyCode] = false;
+                })
+            },
+
+            stop : function() {
+                clearInterval(this.interval);
+            },
+
+            clear : function() {
+                this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            },
+        }
+
+        function everyinterval(n){
+            if ((myGameArea.frameNo / n) % 1 == 0) {return true;}
+            return false;
+        }
+
+        function component(color, x, y, r, property, type) {
+            this.type = type;
+            this.x = x;
+            this.y = y; 
+            this.r = r;  
+            this.color = color;
+            this.property = property;
+             
+            this.speedX = 0;
+            this.speedY = 0;
+            
+            this.update = function(){
+                ctx = myGameArea.context;
+                
+                if(this.type == "text"){
+                    ctx.font = this.r + " " + this.property;
+                    ctx.fillStyle = color;
+                    ctx.fillText(this.text, this.x, this.y);
+                }
+                else{
+                    ctx.beginPath();
+                    ctx.arc(this.x,this.y,this.r,0,2*Math.PI,false);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                }   
+            }
+
+            this.newPos = function() {
+                this.x += this.speedX;
+                this.y += this.speedY + 2; 
+
+                this.hit();
+            }
+
+            this.hit = function() {
+                if (this.y > myGameArea.canvas.height - this.r) {
+                    this.y = myGameArea.canvas.height - this.r;
+                }
+                else if(this.y < this.r){
+                    this.y = this.r;
+                }
+                if(this.x < this.r){
+                    this.x = this.r;
+                }
+                else if(this.x > myGameArea.canvas.width - this.r){
+                    this.x =  myGameArea.canvas.width - this.r;
+                }
+            }
+            
+            this.crashWith = function(otherobj) {
+                const dist = Math.hypot(this.x - otherobj.x,this.y - otherobj.y)
+                var crash = (dist - otherobj.r - this.r < 1) ? true : false;
+                return crash;
+            }
+        }
+
+        function updateGameArea() {
+            var x,y,radius;
+            var x2;
+            var radius2 = 10;
+            
+            for (i = 0; i < rewards.length; i += 1){
+                if(mainComponent.crashWith(rewards[i])){
+                    this.star++;
+                    sound2.play();
+                    rewards.splice(i,1);
+                }
+            }
+
+            for (i = 0; i < obstacles.length; i += 1) {
+                if (mainComponent.crashWith(obstacles[i])) {
+                    sound1.play();
+                    myGameArea.stop();
+                    init();
+                    document.getElementById("modalEl").style.display = "flex";
+                    return;  
+                }  
+            }
+
+            myGameArea.clear();
+            myGameArea.frameNo += 1;
+
+            if (myGameArea.frameNo == 1 || everyinterval(35)) {
+                radius = (Math.random() * 25)+8 ;
+                x = (Math.random() * (myGameArea.canvas.width - radius*2))+ radius;
+                obstacles.push(new component("#0a4664", x, -2*radius, radius));  
+            }
+
+            if (myGameArea.frameNo == 1 || everyinterval(200)) {
+                x2 = (Math.random() * (myGameArea.canvas.width - radius2*2)) + radius2;
+                rewards.push(new component("#F9D923",x2, -2*radius2, radius2));
+            }
+  
+            for (i = 0; i < rewards.length; i += 1) {
+                rewards[i].y += 3;
+                rewards[i].update();
+            }
+
+            for (i = 0; i < obstacles.length; i += 1) {
+                obstacles[i].y += 3;
+                obstacles[i].update();
+            }   
+            
+            mainComponent.speedX = 0;
+            mainComponent.speedY = 0; 
+
+            if (myGameArea.keys && myGameArea.keys[37]) {mainComponent.speedX = -3; }
+            if (myGameArea.keys && myGameArea.keys[39]) {mainComponent.speedX = 3;}
+            if (myGameArea.keys && myGameArea.keys[38]) {mainComponent.speedY = -5; }
+            if (myGameArea.keys && myGameArea.keys[40]) {mainComponent.speedY = 1; }
+
+            myStar.text="SCORE : "+ this.star*10;
+            myStar.update();
+
+            mainComponent.newPos();
+            mainComponent.update();   
+        } 
+    </script>
+</body>
+</html>
